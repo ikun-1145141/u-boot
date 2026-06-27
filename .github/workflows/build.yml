@@ -18,12 +18,12 @@ jobs:
 
       - name: Download toolchain
         run: |
-          curl -L -O https://developer.arm.com/-/cdn-downloads/permalink/legacy-linaro-gnu-toolchains/4.9-2017.01/armgcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
-          tar xvf ./armgcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
+          curl -L -O https://developer.arm.com/-/cdn-downloads/permalink/legacy-linaro-gnu-toolchains/4.9-2017.01/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
+          tar xvf ./gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
 
       - name: Build
         run: |
-          export PATH="$PATH:$(pwd)/armgcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin"
+          export PATH="$PATH:$(pwd)/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin"
 
           make distclean
           make m8b_onecloud_config
