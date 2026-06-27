@@ -16,22 +16,21 @@ jobs:
           sudo apt update
           # 1. 24.04 中将 ttf-dejavu 改为了 fonts-dejavu-core
           # 2. 将 libncurses5 改为兼容性更好的 libncurses6:i386
-          sudo apt install -y make imagemagick fonts-dejavu-core libc6:i386 libncurses6:i386 libstdc++6:i386
+          sudo apt install -y make imagemagick fonts-dejavu-core gcc-arm-none-eabi
 
       - name: Download toolchain
         run: |
-          # 加上 -k 参数，强制跳过 SSL 证书合法性检查，直接下载
-          wget --help
-          wget --no-check-certificate https://redirect.armbian.com/_toolchain/gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
-          tar xvf ./gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
+          echo "Using Ubuntu system build-in arm-none-eabi-gcc toolchain."
 
       - name: Build
         run: |
           export PATH="$PATH:$(pwd)/gcc-linaro-arm-none-eabi-4.8-2014.04_linux/bin"
 
           make distclean
-          make m8b_onecloud_config
-          make -j$(nproc)
+          # 1. 配置时就指定 32位 交叉编译器前缀
+          make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
+          # 2. 编译时同样指定
+          make -j$(nproc) CROSS_COMPILE=arm-none-eabi-
 
       - name: Download AmlImg
         run: |
