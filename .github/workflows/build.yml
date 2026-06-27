@@ -12,8 +12,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo dpkg --add-architecture i386
           sudo apt update
-          sudo apt install make imagemagick ttf-dejavu
+          sudo apt install -y make imagemagick fonts-dejavu-core libc6:i386 libncurses6:i386 libstdc++6:i386
 
       - name: Download toolchain
         run: |
