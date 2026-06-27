@@ -20,7 +20,8 @@ jobs:
 
       - name: Download toolchain
         run: |
-          curl -L -O https://redirect.armbian.com/_toolchain/gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
+          # 加上 -k 参数，强制跳过 SSL 证书合法性检查，直接下载
+          curl -k -L -O https://redirect.armbian.com/_toolchain/gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
           tar xvf ./gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
 
       - name: Build
