@@ -125,9 +125,13 @@ jobs:
           sha="${GITHUB_SHA:0:8}"
           tag="build-$(date +'%Y%m%d-%H%M' -d "$time")"
           message="Auto-Build $(date +'%Y-%m-%d %H:%M' -d "$time")"
-          hub release create  -t "$GITHUB_SHA" "$tag" -m "$message" \
-            $(for a in build/*.bin; do echo -a $a; done) \
-            -a build/resource.img \
-            -a build/eMMC.burn.img
+          
+          # 使用现代官方的 gh 命令行工具创建 Release 并上传附件
+          gh release create "$tag" \
+            --title "$message" \
+            --notes "Automated build from commit $sha" \
+            build/*.bin \
+            build/resource.img \
+            build/eMMC.burn.img
         env:
           GITHUB_TOKEN: ${{ github.token }}
