@@ -14,7 +14,7 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt update
-          sudo apt install -y make imagemagick fonts-dejavu-core libc6:i386 libncurses6:i386 libstdc++6:i386
+          sudo apt install -y make imagemagick fonts-dejavu-core libc6:i386 libncurses6:i386 libstdc++6:i386 lib32z1
 
       - name: Download toolchain
         run: |
@@ -23,11 +23,16 @@ jobs:
 
       - name: Build
         run: |
-          export PATH="$PATH:$(pwd)/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin"
+          # 1. 显式将解压后的 bin 目录加入全局环境 PATH
+          export PATH="$(pwd)/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin:$PATH"
+          
+          # 2. 定义好交叉编译前缀变量
+          export SYS_COM="$(pwd)/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin/arm-eabi-"
 
+          # 3. 开始原厂三板斧编译，并将前缀强制喂给 make
           make distclean
-          make m8b_onecloud_config
-          make -j$(nproc)
+          make m8b_onecloud_config CROSS_COMPILE=$SYS_COM
+          make -j$(nproc) CROSS_COMPILE=$SYS_COM
 
       - name: Download AmlImg
         run: |
