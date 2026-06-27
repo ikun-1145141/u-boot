@@ -24,7 +24,9 @@ jobs:
 
       - name: Build
         run: |
-          export PATH="$PATH:$(pwd)/gcc-linaro-arm-none-eabi-4.8-2014.04_linux/bin"
+          # 核心修复：用 sed 命令自动删掉 common/main.c 里的内联修饰符（兼容新老两种写法）
+          sed -i 's/inline void __show_boot_progress/void __show_boot_progress/g' common/main.c
+          sed -i 's/void inline __show_boot_progress/void __show_boot_progress/g' common/main.c
 
           make distclean
           # 1. 配置时就指定 32位 交叉编译器前缀
