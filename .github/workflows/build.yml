@@ -28,18 +28,11 @@ jobs:
           sed -i 's/inline void __show_boot_progress/void __show_boot_progress/g' common/main.c
           sed -i 's/void inline __show_boot_progress/void __show_boot_progress/g' common/main.c
 
-          # 2. 强效修复：无差别全换成 static inline
+          # 2. 强效修复：将 asm/io.h 里的所有 inline 无差别全换成 static inline 阻断重复定义
           sed -i 's/\binline\b/static inline/g' arch/arm/include/asm/io.h
           sed -i 's/static static inline/static inline/g' arch/arm/include/asm/io.h
 
-          # 3. 终极无死角修复 tools 头文件丢失 Bug：
-          # 晶晨的 tools Makefile 编译时会使用单板配置，我们直接把需要的头文件目录软链接到 tools/ 目录下！
-          # 这样无论它用什么绝对路径还是相对路径，本地 gcc 在当前目录下都能直接抓到 config.h
-          mkdir -p tools/include
-          ln -s ../../include/config.h tools/config.h
-          ln -s ../../include/config.h tools/include/config.h
-
-          # 4. 修复 GCC 13 找不到 compiler-gcc13.h 的限制
+          # 3. 修复 GCC 13 找不到 compiler-gcc13.h 的限制
           cd include/linux/
           if [ -f compiler-gcc4.h ]; then
             cp compiler-gcc4.h compiler-gcc13.h
@@ -52,10 +45,10 @@ jobs:
           # 配置时指定 32位 交叉编译器前缀
           make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
           
-          # 5. 编译：直接在外面给 HOSTCFLAGS 加上当前目录和 build 目录的 include 路径，双重粉碎 404 找不到头文件
-          # 使用当前的 PWD 绝对路径强行注入，不给本地宿主机 gcc 任何迷路的机会
+          # 4. 终极绝杀：利用当前工作目录的绝对路径 $PWD，让本地工具编译彻底锁死头文件方向
+          # 无论 make 怎么进子目录，绝对路径永远有效，完美粉碎 config.h 找不到的 Bug！
           make -j$(nproc) CROSS_COMPILE=arm-none-eabi- \
-            HOSTCFLAGS="-fcommon -I./include -I./build/include -I../include" \
+            HOSTCFLAGS="-fcommon -I$PWD/include -I$PWD/build/include" \
             KCFLAGS="-fcommon -fno-gnu89-inline"
 
       - name: Download AmlImg
