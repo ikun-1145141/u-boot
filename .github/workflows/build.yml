@@ -5,13 +5,17 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Install dependencies
         run: |
+          sudo dpkg --add-architecture i386 # 2. 开启 32 位架构支持
+          sudo apt update
+          # 3. 额外安装 libc6:i386 等 32 位基础库，防止 2014 年的老交叉编译器报 "No such file"
+          sudo apt install -y make imagemagick ttf-dejavu libc6:i386 libncurses5:i386 libstdc++6:i386
           sudo apt update
           sudo apt install make imagemagick ttf-dejavu
 
