@@ -45,14 +45,16 @@ jobs:
           # 4. 执行单板配置生成
           make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
           
-          # 5. 【核心隔离手术】建立一个纯净的宿主机头文件目录，只存放需要的配置，绝不污染全局类型
-          mkdir -p host_include/asm
-          cp build/include/config.h host_include/
-          cp arch/arm/include/asm/config.h host_include/asm/
+          # 5. 【核心完美桥接】建立一个专属于本地宿主机工具的 asm 映射区
+          # 这样宿主机工具寻找 <asm/xxx.h> 时，能通过这个软链接直接直达原生的 arch/arm/include/asm
+          mkdir -p host_asm_dir/asm
+          cp arch/arm/include/asm/config.h host_asm_dir/asm/
 
-          # 6. 开始编译：HOSTCFLAGS 只引入我们刚建立的干净目录，并加上 -fcommon 降级
+          # 6. 开始编译：
+          # -I$PWD/host_asm_dir 专门用来喂给 config.h 寻找 <asm/config.h>
+          # -I$PWD/include 和 -I$PWD/build/include 则是原版头文件区，本地标准工具也能开心享用
           make -j$(nproc) CROSS_COMPILE=arm-none-eabi- \
-            HOSTCFLAGS="-fcommon -I$PWD/host_include" \
+            HOSTCFLAGS="-fcommon -I$PWD/host_asm_dir -I$PWD/include -I$PWD/build/include" \
             KCFLAGS="-fcommon -fno-gnu89-inline"
 
       - name: Download AmlImg
