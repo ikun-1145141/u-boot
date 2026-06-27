@@ -17,8 +17,6 @@ jobs:
           # 1. 24.04 中将 ttf-dejavu 改为了 fonts-dejavu-core
           # 2. 将 libncurses5 改为兼容性更好的 libncurses6:i386
           sudo apt install -y make imagemagick fonts-dejavu-core libc6:i386 libncurses6:i386 libstdc++6:i386
-          sudo apt update
-          sudo apt install make imagemagick ttf-dejavu
 
       - name: Download toolchain
         run: |
