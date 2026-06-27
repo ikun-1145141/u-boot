@@ -28,13 +28,16 @@ jobs:
           sed -i 's/inline void __show_boot_progress/void __show_boot_progress/g' common/main.c
           sed -i 's/void inline __show_boot_progress/void __show_boot_progress/g' common/main.c
 
-          # 2. 强效修复：把 asm/io.h 里的 inline 全部强行替换为 static inline，彻底消灭重复定义
+          # 2. 强效修复：无差别全换成 static inline
           sed -i 's/\binline\b/static inline/g' arch/arm/include/asm/io.h
           sed -i 's/static static inline/static inline/g' arch/arm/include/asm/io.h
 
-          # 3. 核心修复：强行修复晶晨 tools/Makefile 忘记包含 build 头文件目录导致本地编译找不到 config.h 的原生 Bug
-          # 在 HOSTCFLAGS 变量里强行塞入当前编译输出目录的 include 路径
-          sed -i 's|^HOSTCFLAGS\t=|HOSTCFLAGS\t= -I$(obj)include -I$(SRCTREE)/include |g' tools/Makefile
+          # 3. 终极无死角修复 tools 头文件丢失 Bug：
+          # 晶晨的 tools Makefile 编译时会使用单板配置，我们直接把需要的头文件目录软链接到 tools/ 目录下！
+          # 这样无论它用什么绝对路径还是相对路径，本地 gcc 在当前目录下都能直接抓到 config.h
+          mkdir -p tools/include
+          ln -s ../../include/config.h tools/config.h
+          ln -s ../../include/config.h tools/include/config.h
 
           # 4. 修复 GCC 13 找不到 compiler-gcc13.h 的限制
           cd include/linux/
@@ -49,8 +52,11 @@ jobs:
           # 配置时指定 32位 交叉编译器前缀
           make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
           
-          # 5. 开始编译，加入 -fcommon 给链接双重保险
-          make -j$(nproc) CROSS_COMPILE=arm-none-eabi- HOSTCFLAGS="-fcommon" KCFLAGS="-fcommon -fno-gnu89-inline"
+          # 5. 编译：直接在外面给 HOSTCFLAGS 加上当前目录和 build 目录的 include 路径，双重粉碎 404 找不到头文件
+          # 使用当前的 PWD 绝对路径强行注入，不给本地宿主机 gcc 任何迷路的机会
+          make -j$(nproc) CROSS_COMPILE=arm-none-eabi- \
+            HOSTCFLAGS="-fcommon -I./include -I./build/include -I../include" \
+            KCFLAGS="-fcommon -fno-gnu89-inline"
 
       - name: Download AmlImg
         run: |
