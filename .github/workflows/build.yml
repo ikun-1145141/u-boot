@@ -5,42 +5,44 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
 
       - name: Install dependencies
         run: |
           sudo apt update
-          # 2. 干净地安装 20.04 运行器上原生的包，完全不需要折腾任何 i386 跨架构库
-          sudo apt install -y make imagemagick fonts-dejavu-core gcc-arm-none-eabi
+          sudo apt install make imagemagick ttf-dejavu
 
       - name: Download toolchain
         run: |
-          echo "Using Ubuntu system build-in arm-none-eabi-gcc toolchain."
+          curl -L -O https://developer.arm.com/-/cdn-downloads/permalink/legacy-linaro-gnu-toolchains/4.9-2017.01/armgcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
+          tar xvf ./armgcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
 
       - name: Build
         run: |
-          # 3. 20.04 自带的 GCC 9 会完美兼容这套源码，直接恢复最干净的原生编译命令：
+          export PATH="$PATH:$(pwd)/armgcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin"
+
           make distclean
           make m8b_onecloud_config
-          make -j$(nproc) CROSS_COMPILE=arm-none-eabi-
+          make -j$(nproc)
 
       - name: Download AmlImg
         run: |
           ver="v0.3.0"
-          curl --help
           curl -L -o ./AmlImg https://github.com/hzyitc/AmlImg/releases/download/$ver/AmlImg_${ver}_linux_amd64
           chmod +x ./AmlImg
 
       - name: Generate resource
         run: |
           mkdir -p resource
-          
-          # 使用 convert 工具把你提交的 PNG 完美转换为标准 U-Boot BMP3 格式
-          # -background black: 如果你的 PNG 有透明图层，透明部分会自动填充为纯黑
-          convert my_logo/uboot.png -background black -flatten BMP3:resource/bootup.bmp
+
+          convert \
+            -size 640x360 \
+            -background black \
+            -gravity center -font "DejaVu-Sans" -pointsize 64 -fill white label:"U-Boot" \
+            BMP3:resource/bootup.bmp
 
           cat <<EOF >resource/list.txt
           090000:bootup:bootup.bmp
@@ -103,9 +105,8 @@ jobs:
           ./AmlImg pack build/eMMC.burn.img pack/
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v2
         with:
-          name: onecloud-uboot-artifacts
           path: |
             build/*.bin
             build/resource.img
