@@ -40,10 +40,12 @@ jobs:
           cd ../../
 
           make distclean
-          # 1. 配置时就指定 32位 交叉编译器前缀
+          # 配置时指定 32位 交叉编译器前缀
           make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
-          # 2. 编译时同样指定
-          make -j$(nproc) CROSS_COMPILE=arm-none-eabi-
+          
+          # 3. 核心修复：添加 KCFLAGS="-fno-gnu89-inline" 和 LDFLAGS_u-boot="-z muldefs"
+          # 强行让现代 GCC 和链接器无视老旧内联函数的重复定义冲突
+          make -j$(nproc) CROSS_COMPILE=arm-none-eabi- KCFLAGS="-fno-gnu89-inline" LDFLAGS_u-boot="-z muldefs"
 
       - name: Download AmlImg
         run: |
