@@ -28,6 +28,17 @@ jobs:
           sed -i 's/inline void __show_boot_progress/void __show_boot_progress/g' common/main.c
           sed -i 's/void inline __show_boot_progress/void __show_boot_progress/g' common/main.c
 
+          # 2. 核心修复：复制或创建一个软链接，让 GCC 13 能够找到对应的老版本编译器兼容头文件
+          # 假设源码里有 compiler-gcc4.h，我们直接借用它的定义给 gcc13
+          cd include/linux/
+          if [ -f compiler-gcc4.h ]; then
+            cp compiler-gcc4.h compiler-gcc13.h
+          elif [ -f compiler-gcc*.h ]; then
+            # 如果没有 gcc4.h，找任意一个老版本的 gcc 头文件拷贝过去
+            cp $(ls compiler-gcc*.h | head -n 1) compiler-gcc13.h
+          fi
+          cd ../../
+
           make distclean
           # 1. 配置时就指定 32位 交叉编译器前缀
           make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
