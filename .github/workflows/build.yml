@@ -37,7 +37,9 @@ jobs:
       - name: Generate resource
         run: |
           mkdir -p resource
-
+          
+          # 使用 convert 工具把你提交的 PNG 完美转换为标准 U-Boot BMP3 格式
+          # -background black: 如果你的 PNG 有透明图层，透明部分会自动填充为纯黑
           convert my_logo/uboot.png -background black -flatten BMP3:resource/bootup.bmp
 
           cat <<EOF >resource/list.txt
