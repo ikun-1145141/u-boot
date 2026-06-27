@@ -45,10 +45,11 @@ jobs:
           # 配置时指定 32位 交叉编译器前缀
           make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
           
-          # 4. 终极绝杀：利用当前工作目录的绝对路径 $PWD，让本地工具编译彻底锁死头文件方向
-          # 无论 make 怎么进子目录，绝对路径永远有效，完美粉碎 config.h 找不到的 Bug！
+          # 4. 终极绝杀：在 HOSTCFLAGS 中不仅加入常规 include 目录，
+          # 还要用绝对路径加入 arch/arm/include 和生成的 build 包含目录！
+          # 这样宿主机 GCC 就能横行霸道，不管是 config.h 还是 asm/config.h 统统都能一网打尽！
           make -j$(nproc) CROSS_COMPILE=arm-none-eabi- \
-            HOSTCFLAGS="-fcommon -I$PWD/include -I$PWD/build/include" \
+            HOSTCFLAGS="-fcommon -I$PWD/include -I$PWD/build/include -I$PWD/arch/arm/include" \
             KCFLAGS="-fcommon -fno-gnu89-inline"
 
       - name: Download AmlImg
