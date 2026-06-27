@@ -5,17 +5,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          sudo dpkg --add-architecture i386 # 2. 开启 32 位架构支持
           sudo apt update
-          # 1. 24.04 中将 ttf-dejavu 改为了 fonts-dejavu-core
-          # 2. 将 libncurses5 改为兼容性更好的 libncurses6:i386
+          # 2. 干净地安装 20.04 运行器上原生的包，完全不需要折腾任何 i386 跨架构库
           sudo apt install -y make imagemagick fonts-dejavu-core gcc-arm-none-eabi
 
       - name: Download toolchain
@@ -24,38 +22,10 @@ jobs:
 
       - name: Build
         run: |
-          # 1. 修复 main.c inline 别名冲突
-          sed -i 's/inline void __show_boot_progress/void __show_boot_progress/g' common/main.c
-          sed -i 's/void inline __show_boot_progress/void __show_boot_progress/g' common/main.c
-
-          # 2. 强效修复：将 asm/io.h 里的所有 inline 无差别全换成 static inline 阻断重复定义
-          sed -i 's/\binline\b/static inline/g' arch/arm/include/asm/io.h
-          sed -i 's/static static inline/static inline/g' arch/arm/include/asm/io.h
-
-          # 3. 修复 GCC 13 找不到 compiler-gcc13.h 的限制
-          cd include/linux/
-          if [ -f compiler-gcc4.h ]; then
-            cp compiler-gcc4.h compiler-gcc13.h
-          elif [ -f compiler-gcc*.h ]; then
-            cp $(ls compiler-gcc*.h | head -n 1) compiler-gcc13.h
-          fi
-          cd ../../
-
+          # 3. 20.04 自带的 GCC 9 会完美兼容这套源码，直接恢复最干净的原生编译命令：
           make distclean
-          # 4. 执行单板配置生成
-          make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
-          
-          # 5. 【核心完美桥接】建立一个专属于本地宿主机工具的 asm 映射区
-          # 这样宿主机工具寻找 <asm/xxx.h> 时，能通过这个软链接直接直达原生的 arch/arm/include/asm
-          mkdir -p host_asm_dir/asm
-          cp arch/arm/include/asm/config.h host_asm_dir/asm/
-
-          # 6. 开始编译：
-          # -I$PWD/host_asm_dir 专门用来喂给 config.h 寻找 <asm/config.h>
-          # -I$PWD/include 和 -I$PWD/build/include 则是原版头文件区，本地标准工具也能开心享用
-          make -j$(nproc) CROSS_COMPILE=arm-none-eabi- \
-            HOSTCFLAGS="-fcommon -I$PWD/host_asm_dir -I$PWD/include -I$PWD/build/include" \
-            KCFLAGS="-fcommon -fno-gnu89-inline"
+          make m8b_onecloud_config
+          make -j$(nproc) CROSS_COMPILE=arm-none-eabi-
 
       - name: Download AmlImg
         run: |
