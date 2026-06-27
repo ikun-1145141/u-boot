@@ -21,7 +21,8 @@ jobs:
       - name: Download toolchain
         run: |
           # 加上 -k 参数，强制跳过 SSL 证书合法性检查，直接下载
-          curl -k -L -O https://redirect.armbian.com/_toolchain/gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
+          wget --help
+          wget --no-check-certificate https://redirect.armbian.com/_toolchain/gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
           tar xvf ./gcc-linaro-arm-none-eabi-4.8-2014.04_linux.tar.xz
 
       - name: Build
@@ -35,6 +36,7 @@ jobs:
       - name: Download AmlImg
         run: |
           ver="v0.3.0"
+          curl --help
           curl -L -o ./AmlImg https://github.com/hzyitc/AmlImg/releases/download/$ver/AmlImg_${ver}_linux_amd64
           chmod +x ./AmlImg
 
