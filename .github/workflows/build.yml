@@ -38,11 +38,7 @@ jobs:
         run: |
           mkdir -p resource
 
-          convert \
-            -size 640x360 \
-            -background black \
-            -gravity center -font "DejaVu-Sans" -pointsize 64 -fill white label:"U-Boot" \
-            BMP3:resource/bootup.bmp
+          convert my_logo/uboot.png -background black -flatten BMP3:resource/bootup.bmp
 
           cat <<EOF >resource/list.txt
           090000:bootup:bootup.bmp
