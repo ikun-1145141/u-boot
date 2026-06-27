@@ -28,9 +28,11 @@ jobs:
           sed -i 's/inline void __show_boot_progress/void __show_boot_progress/g' common/main.c
           sed -i 's/void inline __show_boot_progress/void __show_boot_progress/g' common/main.c
 
-          # 2. 终极修复：把 asm/io.h 里的 inline 全部强行替换为 static inline，彻底消灭重复定义！
-          sed -i 's/^inline /static inline /g' arch/arm/include/asm/io.h
-          sed -i 's/ extern inline / static inline /g' arch/arm/include/asm/io.h
+          # 2. 终极强效修复：不管 inline 在哪里，无差别全换成 static inline
+          # 这样能彻底阻断强符号的生成，绝不留任何漏网之鱼
+          sed -i 's/\binline\b/static inline/g' arch/arm/include/asm/io.h
+          # 消除可能出现的 "static static inline" 叠词逻辑错误
+          sed -i 's/static static inline/static inline/g' arch/arm/include/asm/io.h
 
           # 3. 修复 GCC 13 找不到 compiler-gcc13.h 的限制
           cd include/linux/
@@ -44,8 +46,9 @@ jobs:
           make distclean
           # 配置时指定 32位 交叉编译器前缀
           make m8b_onecloud_config CROSS_COMPILE=arm-none-eabi-
-          # 编译时同样指定（去掉了多余且无效的链接器参数，保持干净）
-          make -j$(nproc) CROSS_COMPILE=arm-none-eabi-
+          
+          # 4. 同时加入全局的 CFLAGS 降级参数 -fcommon，允许变量和未定义内联符号合并（给链接双重保险）
+          make -j$(nproc) CROSS_COMPILE=arm-none-eabi- HOSTCFLAGS="-fcommon" KCFLAGS="-fcommon -fno-gnu89-inline"
 
       - name: Download AmlImg
         run: |
