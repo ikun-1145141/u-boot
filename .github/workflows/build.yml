@@ -8,55 +8,52 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: |
           sudo dpkg --add-architecture i386
           sudo apt update
           sudo apt install -y make imagemagick fonts-dejavu-core libc6:i386 libncurses6:i386 libstdc++6:i386 lib32z1
 
-      - name: Download toolchain
+      - name: 下载工具链
         run: |
           curl -L -O https://developer.arm.com/-/cdn-downloads/permalink/legacy-linaro-gnu-toolchains/4.9-2017.01/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
           tar xvf ./gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi.tar.xz
 
-      - name: Build
+      - name: 编译
         run: |
-          # 1. 显式将解压后的 bin 目录加入全局环境 PATH
+          # 1. 将解压后的 bin 目录加入 PATH
           export PATH="$(pwd)/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin:$PATH"
           
-          # 2. 定义好交叉编译前缀变量
+          # 2. 定义交叉编译前缀
           export SYS_COM="$(pwd)/gcc-linaro-4.9.4-2017.01-x86_64_arm-eabi/bin/arm-eabi-"
 
-          # 3. 开始原厂三板斧编译，并将前缀强制喂给 make
+          # 3. 三板斧编译
           make distclean
           make m8b_onecloud_config CROSS_COMPILE=$SYS_COM
           make -j$(nproc) CROSS_COMPILE=$SYS_COM
 
-      - name: Download AmlImg
+      - name: 下载 AmlImg
         run: |
           ver="v0.3.0"
           curl -L -o ./AmlImg https://github.com/hzyitc/AmlImg/releases/download/$ver/AmlImg_${ver}_linux_amd64
           chmod +x ./AmlImg
 
-      - name: Generate resource
+      - name: 生成资源包
         run: |
           mkdir -p resource
 
-          convert \
-            -size 640x360 \
-            -background black \
-            -gravity center -font "DejaVu-Sans" -pointsize 64 -fill white label:"U-Boot" \
-            BMP3:resource/bootup.bmp
+          # 将 my_logo/uboot.png 转换为 640x360 的 24bit BMP 作为启动 logo
+          convert my_logo/uboot.png -resize 640x360 BMP3:resource/bootup.bmp
 
           cat <<EOF >resource/list.txt
           090000:bootup:bootup.bmp
           EOF
           ./AmlImg res_pack build/resource.img resource/
 
-      - name: Generate eMMC burn image
+      - name: 生成 eMMC 烧录镜像
         run: |
           mkdir -p pack
 
@@ -111,7 +108,7 @@ jobs:
 
           ./AmlImg pack build/eMMC.burn.img pack/
 
-      - name: Upload artifacts
+      - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
           name: onecloud-uboot-artifacts
@@ -120,17 +117,17 @@ jobs:
             build/resource.img
             build/eMMC.burn.img
 
-      - name: Release
+      - name: 发布 Release
         run: |
           time="${{ github.event.head_commit.timestamp }}"
           sha="${GITHUB_SHA:0:8}"
           tag="build-$(date +'%Y%m%d-%H%M' -d "$time")"
-          message="Auto-Build $(date +'%Y-%m-%d %H:%M' -d "$time")"
+          message="自动构建 $(date +'%Y-%m-%d %H:%M' -d "$time")"
           
-          # 使用现代官方的 gh 命令行工具创建 Release 并上传附件
+          # 使用 gh 命令行工具创建 Release 并上传附件
           gh release create "$tag" \
             --title "$message" \
-            --notes "Automated build from commit $sha" \
+            --notes "由提交 $sha 自动构建" \
             build/*.bin \
             build/resource.img \
             build/eMMC.burn.img
